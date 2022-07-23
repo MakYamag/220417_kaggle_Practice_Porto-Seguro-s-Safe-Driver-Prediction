@@ -5,7 +5,7 @@
 # - *Name*を用いて同じ家族を同定し、生存率を計算した新たな列*Family_SurvRate*を作成する。
 # - *Ticket*を用いて上6桁が同じチケット番号のグループ分けし、生存率を計算した新たな列*Ticket_SurvRate*を作成。
 
-# In[1]:
+# In[34]:
 
 
 import numpy as np
@@ -13,6 +13,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import string
 from sklearn.utils import shuffle
+from sklearn.impute import SimpleImputer
 
 
 # In[2]:
@@ -223,7 +224,7 @@ for f in v:
 
 # ### 2.1) target変数の不均衡対策
 
-# In[12]:
+# In[49]:
 
 
 # 1.2)で見たように'target'内で1の割合が極端に少ない
@@ -259,9 +260,50 @@ train
 
 # ### 2.2) 欠損値処理
 
-# In[ ]:
+# In[55]:
 
 
 # 欠損値の割合が大きい ps_car_03_cat、ps_car_05_cat を取り除く
 # -----------------------------------------------------------
+
+vars_to_drop = ['ps_car_03_cat', 'ps_car_05_cat']
+if np.size(train, axis=1) == 59:
+    train.drop(vars_to_drop, inplace=True, axis=1)
+
+# 'meta'をアップデートしておく
+meta.loc[(vars_to_drop), 'keep'] = False
+
+
+# 欠損値にmean またはmodeを代入する
+# ----------------------------------
+
+mean_imp = SimpleImputer(missing_values=-1, strategy='mean')
+mode_imp = SimpleImputer(missing_values=-1, strategy='most_frequent')
+
+vars_to_mean = ['ps_reg_03', 'ps_car_12', 'ps_car_14']
+mean_imp.fit(train[(vars_to_mean)])
+train[(vars_to_mean)] = mean_imp.transform(train[(vars_to_mean)])
+
+vars_to_mode = ['ps_ind_02_cat', 'ps_ind_04_cat', 'ps_ind_05_cat', 'ps_car_01_cat',
+                'ps_car_02_cat', 'ps_car_07_cat', 'ps_car_09_cat', 'ps_car_11']
+mode_imp.fit(train[(vars_to_mode)])
+train[(vars_to_mode)] = mode_imp.transform(train[(vars_to_mode)])
+
+
+# 欠損値がなくなったか確認
+# -------------------------
+
+vars_missing = []
+
+for f in train.columns:
+    n_missing = train[train[f] == -1][f].count()
+    
+    if n_missing > 0:
+        vars_missing.append(f)
+        perc_missing = n_missing / train.shape[0]
+        print('Variable {} has {} records ({:.2%})'.format(f, n_missing, perc_missing)
+              + ' with missing values')
+        
+print('In total, there are {} missing variables'.format(len(vars_missing))
+      + ' with missing values')
 
