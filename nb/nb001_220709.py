@@ -5,16 +5,17 @@
 # - *Name*を用いて同じ家族を同定し、生存率を計算した新たな列*Family_SurvRate*を作成する。
 # - *Ticket*を用いて上6桁が同じチケット番号のグループ分けし、生存率を計算した新たな列*Ticket_SurvRate*を作成。
 
-# In[1]:
+# In[116]:
 
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn
+import seaborn as sns
 import string
 from sklearn.utils import shuffle
 from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import PolynomialFeatures
 
 
 # In[2]:
@@ -221,11 +222,146 @@ for f in v:
 # ----------------------------------
 
 
-# ## 2) データ加工
+# ## 2) データ可視化
 
-# ### 2.1) target変数の不均衡対策
+# ### 2.1) categoricalデータの可視化
 
-# In[12]:
+# In[97]:
+
+
+# 各categoricalデータにおいて、値ごとの
+# 「'target'の平均」=「'target'=1である確率」をグラフ化
+# ------------------------------------------------------
+
+v = meta[(meta['level'] == 'categorical') & (meta['keep'] == True)].index
+
+vs = v.size
+row = int(np.ceil(vs / 2))
+
+i = 1
+fig = plt.figure(figsize=(9.6, 21.6), dpi=100)
+
+for f in v:
+    ax = fig.add_subplot(row, 2, i, xlabel=f, ylabel='% target')
+    
+    # 各データでの'target'平均値を計算
+    cart_perc = data_train[[f, 'target']].groupby([f], as_index=False).mean()
+    cart_perc.sort_values(by='target', ascending=False, inplace=True)
+    
+    # グラフに出力
+    X = cart_perc[f]
+    Y = cart_perc['target']
+    color = [('lightpink' if i==-1 else 'lightblue') for i in X]
+    ax.bar(X, Y, color=color)   # 欠損値のみピンクで出力する
+
+    i += 1
+
+    
+# ------------------------------------------------
+#
+# 欠損値が'target'=1に寄与している変数が多いことがわかる
+#
+# ------------------------------------------------
+
+
+# ### 3.2) continuousデータの可視化
+
+# In[98]:
+
+
+# 各continuousデータの相関を可視化
+# ---------------------------------
+
+def corr_heatmap(v):
+    correlations = data_train[v].corr()
+    
+    # カラーマップの作成
+    cmap = sns.diverging_palette(220, 10, as_cmap=True)
+    
+    fig = plt.figure(figsize=(9.6, 9.6), dpi=100)
+    ax = fig.add_subplot(1, 1, 1)
+    sns.heatmap(correlations, cmap=cmap, vmax=1.0, center=0, fmt='.2f',
+                square=True, linewidths=.5, annot=True, cbar_kws={'shrink': .75})
+
+    
+v = meta[(meta['level'] == 'continuous') & (meta['keep'] == True)].index
+corr_heatmap(v)
+
+
+# -------------------------------------
+# ・'ps_reg_02'と'ps_reg_03'の相関0.7
+# ・'ps_car_!2'と'ps_car_13'の相関0.67
+# ・'ps_car_12'と'ps_car_14'の相関0.58
+# ・'ps_car_13'と'ps_car_15'の相関0.53
+# -------------------------------------
+
+
+# In[100]:
+
+
+# 高速化のため10%のデータをランダムに抽出
+s = data_train.sample(frac=0.1)
+
+
+# 'ps_reg_02'と'ps_reg_03'をプロット
+# -----------------------------------
+
+sns.lmplot(x='ps_reg_02', y='ps_reg_03', data=s, hue='target', palette='Set1', 
+           scatter_kws={'alpha': 0.2})
+
+
+# In[101]:
+
+
+# 'ps_car_12'と'ps_car_13'をプロット
+# -----------------------------------
+
+sns.lmplot(x='ps_car_12', y='ps_car_13', data=s, hue='target', palette='Set1', 
+           scatter_kws={'alpha': 0.2})
+
+
+# In[102]:
+
+
+# 'ps_car_12'と'ps_car_14'をプロット
+# -----------------------------------
+
+sns.lmplot(x='ps_car_12', y='ps_car_14', data=s, hue='target', palette='Set1', 
+           scatter_kws={'alpha': 0.2})
+
+
+# In[103]:
+
+
+# 'ps_car_13'と'ps_car_15'をプロット
+# -----------------------------------
+
+sns.lmplot(x='ps_car_13', y='ps_car_15', data=s, hue='target', palette='Set1', 
+           scatter_kws={'alpha': 0.2})
+
+
+# ### 3.3) ordinalデータの可視化
+
+# In[96]:
+
+
+# 各ordinalデータの相関を可視化
+# -------------------------------
+
+v = meta[(meta['level'] == 'ordinal') & (meta['keep'] == True)].index
+corr_heatmap(v)
+
+
+# -----------------------------------------
+# 'ordinal'データは互いに相関はほとんどない
+# -----------------------------------------
+
+
+# ## 3) データ加工
+
+# ### 3.1) target変数の不均衡対策
+
+# In[105]:
 
 
 # 1.2)で見たように'target'内で1の割合が極端に少ない
@@ -256,13 +392,13 @@ idx_list = list(undersampled_idx) + list(idx_1)
 
 # undersampleしたデータを取り出す
 train = data_train.loc[idx_list].reset_index(drop=True)
-train_w_nan = train.copy()   # 3.1)で使うので欠損値ありのものをコピーしておく
-train_w_nan
+train_w_nan = train.copy()   # 欠損値ありのものをコピーしておく
+train
 
 
-# ### 2.2) 欠損値処理
+# ### 3.2) 欠損値処理
 
-# In[13]:
+# In[109]:
 
 
 # 欠損値の割合が大きい ps_car_03_cat、ps_car_05_cat を取り除く
@@ -310,37 +446,41 @@ print('In total, there are {} missing variables'.format(len(vars_missing))
       + ' with missing values')
 
 
-# ## 3) データ可視化
+# ### 3.3) categorical変数のダミー化
 
-# ### 3.1) categoricalデータの可視化
+# In[111]:
 
-# In[14]:
-
-
-# 各categoricalデータにおいて、値ごとの
-# 「'target'の平均」=「'target'=1である確率」をグラフ化
-# ------------------------------------------------------
 
 v = meta[(meta['level'] == 'categorical') & (meta['keep'] == True)].index
+print('Before dummification, we have {} variables in train data'.format(train.shape[1]))
 
-vs = v.size
-row = int(np.ceil(vs / 2))
+train = pd.get_dummies(train, columns=v, drop_first=True)
+print('After dummification, we have {} variables in train data'.format(train.shape[1]))
 
-i = 1
-fig = plt.figure(figsize=(9.6, 20.0), dpi=100)
 
-for f in v:
-    ax = fig.add_subplot(row, 2, i, xlabel=f, ylabel='% target')
-    
-    # 各データでの'target'平均値を計算
-    cart_perc = train_w_nan[[f, 'target']].groupby([f], as_index=False).mean()
-    cart_perc.sort_values(by='target', ascending=False, inplace=True)
-    
-    # グラフに出力
-    X = cart_perc[f]
-    Y = cart_perc['target']
-    color = [('lightpink' if i==-1 else 'lightblue') for i in X]
-    ax.bar(X, Y, color=color)   # 欠損値のみピンクで出力する
+# ### 3.4) continuous変数のべき乗および交互作用の特徴量を作成
 
-    i += 1
+# In[126]:
+
+
+v = meta[(meta['level'] == 'continuous') & meta['keep'] == True].index
+poly = PolynomialFeatures(degree=2, interaction_only=False, include_bias=False)
+interactions = pd.DataFrame(data=poly.fit_transform(train[v]),
+                            columns=poly.get_feature_names(v))
+
+# オリジナルの特徴量は重複となるので削除
+interactions.drop(v, axis=1, inplace=True)
+
+print('Before creating interactions, we have {} variables in train data'.format(train.shape[1]))
+
+train = pd.concat([train, interactions], axis=1)
+print('After creating interactions, we have {} variables in train data'.format(train.shape[1]))
+
+interactions
+
+
+# In[ ]:
+
+
+
 
