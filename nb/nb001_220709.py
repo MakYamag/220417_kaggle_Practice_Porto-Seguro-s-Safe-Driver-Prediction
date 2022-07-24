@@ -5,12 +5,13 @@
 # - *Name*を用いて同じ家族を同定し、生存率を計算した新たな列*Family_SurvRate*を作成する。
 # - *Ticket*を用いて上6桁が同じチケット番号のグループ分けし、生存率を計算した新たな列*Ticket_SurvRate*を作成。
 
-# In[34]:
+# In[1]:
 
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn
 import string
 from sklearn.utils import shuffle
 from sklearn.impute import SimpleImputer
@@ -224,7 +225,7 @@ for f in v:
 
 # ### 2.1) target変数の不均衡対策
 
-# In[49]:
+# In[12]:
 
 
 # 1.2)で見たように'target'内で1の割合が極端に少ない
@@ -255,12 +256,13 @@ idx_list = list(undersampled_idx) + list(idx_1)
 
 # undersampleしたデータを取り出す
 train = data_train.loc[idx_list].reset_index(drop=True)
-train
+train_w_nan = train.copy()   # 3.1)で使うので欠損値ありのものをコピーしておく
+train_w_nan
 
 
 # ### 2.2) 欠損値処理
 
-# In[55]:
+# In[13]:
 
 
 # 欠損値の割合が大きい ps_car_03_cat、ps_car_05_cat を取り除く
@@ -306,4 +308,39 @@ for f in train.columns:
         
 print('In total, there are {} missing variables'.format(len(vars_missing))
       + ' with missing values')
+
+
+# ## 3) データ可視化
+
+# ### 3.1) categoricalデータの可視化
+
+# In[14]:
+
+
+# 各categoricalデータにおいて、値ごとの
+# 「'target'の平均」=「'target'=1である確率」をグラフ化
+# ------------------------------------------------------
+
+v = meta[(meta['level'] == 'categorical') & (meta['keep'] == True)].index
+
+vs = v.size
+row = int(np.ceil(vs / 2))
+
+i = 1
+fig = plt.figure(figsize=(9.6, 20.0), dpi=100)
+
+for f in v:
+    ax = fig.add_subplot(row, 2, i, xlabel=f, ylabel='% target')
+    
+    # 各データでの'target'平均値を計算
+    cart_perc = train_w_nan[[f, 'target']].groupby([f], as_index=False).mean()
+    cart_perc.sort_values(by='target', ascending=False, inplace=True)
+    
+    # グラフに出力
+    X = cart_perc[f]
+    Y = cart_perc['target']
+    color = [('lightpink' if i==-1 else 'lightblue') for i in X]
+    ax.bar(X, Y, color=color)   # 欠損値のみピンクで出力する
+
+    i += 1
 
