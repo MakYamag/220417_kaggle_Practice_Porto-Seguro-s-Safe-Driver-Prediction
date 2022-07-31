@@ -2,10 +2,11 @@
 # coding: utf-8
 
 # # Overview
-# - *Name*を用いて同じ家族を同定し、生存率を計算した新たな列*Family_SurvRate*を作成する。
-# - *Ticket*を用いて上6桁が同じチケット番号のグループ分けし、生存率を計算した新たな列*Ticket_SurvRate*を作成。
+# - kaggleのNotebook(BERT CARREMANS氏)を参考に、1)データ読込、2)可視化、3)加工を実施。
+# - 3)のデータ加工は、(1)目的変数の不均衡対策としてのUndersampling、(2)欠損値補完、(3)ダミー変数作成、(4)交互作用特徴量の作成、(5)Random Forest重要特徴量による特徴量選択、を実施。
+# - 参考: Data Preparation & Exploration, BERT CARREMANS, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook
 
-# In[116]:
+# In[43]:
 
 
 import numpy as np
@@ -16,7 +17,15 @@ import string
 from sklearn.utils import shuffle
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import PolynomialFeatures
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.feature_selection import SelectFromModel
+from sklearn.ensemble import RandomForestClassifier
 
+pd.set_option('display.max_columns', 100)
+
+
+# ## 1) データ読込
 
 # In[2]:
 
@@ -34,8 +43,6 @@ data_test = pd.read_csv('C:/Users/ultra/Documents/GitHub/data/220417_kaggle_Prac
 data_test.head()
 
 
-# ## 1) データ可視化
-
 # In[4]:
 
 
@@ -45,7 +52,6 @@ print('')
 print(data_train.info())
 
 
-# 
 # ### 1.1) データをメタ化する
 
 # In[5]:
@@ -226,7 +232,7 @@ for f in v:
 
 # ### 2.1) categoricalデータの可視化
 
-# In[97]:
+# In[12]:
 
 
 # 各categoricalデータにおいて、値ごとの
@@ -258,15 +264,13 @@ for f in v:
 
     
 # ------------------------------------------------
-#
 # 欠損値が'target'=1に寄与している変数が多いことがわかる
-#
 # ------------------------------------------------
 
 
 # ### 3.2) continuousデータの可視化
 
-# In[98]:
+# In[13]:
 
 
 # 各continuousデータの相関を可視化
@@ -296,7 +300,7 @@ corr_heatmap(v)
 # -------------------------------------
 
 
-# In[100]:
+# In[14]:
 
 
 # 高速化のため10%のデータをランダムに抽出
@@ -310,7 +314,7 @@ sns.lmplot(x='ps_reg_02', y='ps_reg_03', data=s, hue='target', palette='Set1',
            scatter_kws={'alpha': 0.2})
 
 
-# In[101]:
+# In[15]:
 
 
 # 'ps_car_12'と'ps_car_13'をプロット
@@ -320,7 +324,7 @@ sns.lmplot(x='ps_car_12', y='ps_car_13', data=s, hue='target', palette='Set1',
            scatter_kws={'alpha': 0.2})
 
 
-# In[102]:
+# In[16]:
 
 
 # 'ps_car_12'と'ps_car_14'をプロット
@@ -330,7 +334,7 @@ sns.lmplot(x='ps_car_12', y='ps_car_14', data=s, hue='target', palette='Set1',
            scatter_kws={'alpha': 0.2})
 
 
-# In[103]:
+# In[17]:
 
 
 # 'ps_car_13'と'ps_car_15'をプロット
@@ -342,7 +346,7 @@ sns.lmplot(x='ps_car_13', y='ps_car_15', data=s, hue='target', palette='Set1',
 
 # ### 3.3) ordinalデータの可視化
 
-# In[96]:
+# In[18]:
 
 
 # 各ordinalデータの相関を可視化
@@ -361,7 +365,7 @@ corr_heatmap(v)
 
 # ### 3.1) target変数の不均衡対策
 
-# In[105]:
+# In[19]:
 
 
 # 1.2)で見たように'target'内で1の割合が極端に少ない
@@ -398,7 +402,7 @@ train
 
 # ### 3.2) 欠損値処理
 
-# In[109]:
+# In[20]:
 
 
 # 欠損値の割合が大きい ps_car_03_cat、ps_car_05_cat を取り除く
@@ -448,7 +452,7 @@ print('In total, there are {} missing variables'.format(len(vars_missing))
 
 # ### 3.3) categorical変数のダミー化
 
-# In[111]:
+# In[21]:
 
 
 v = meta[(meta['level'] == 'categorical') & (meta['keep'] == True)].index
@@ -460,7 +464,7 @@ print('After dummification, we have {} variables in train data'.format(train.sha
 
 # ### 3.4) continuous変数のべき乗および交互作用の特徴量を作成
 
-# In[126]:
+# In[22]:
 
 
 v = meta[(meta['level'] == 'continuous') & meta['keep'] == True].index
@@ -468,7 +472,7 @@ poly = PolynomialFeatures(degree=2, interaction_only=False, include_bias=False)
 interactions = pd.DataFrame(data=poly.fit_transform(train[v]),
                             columns=poly.get_feature_names(v))
 
-# オリジナルの特徴量は重複となるので削除
+# オリジナル(一次)の特徴量は重複となるので削除
 interactions.drop(v, axis=1, inplace=True)
 
 print('Before creating interactions, we have {} variables in train data'.format(train.shape[1]))
@@ -476,11 +480,67 @@ print('Before creating interactions, we have {} variables in train data'.format(
 train = pd.concat([train, interactions], axis=1)
 print('After creating interactions, we have {} variables in train data'.format(train.shape[1]))
 
-interactions
+interactions.head()
 
 
-# In[ ]:
+# ### 3.5) 特徴量選択
+
+# #### 3.5.1) 低分散特徴量を削除
+
+# In[23]:
 
 
+selector = VarianceThreshold(threshold=0.01)
+selector.fit(train.drop(['id', 'target'], axis=1))
 
+# bool型に対し値を反転させるユニバーサル関数をnp.vectorizeで作成
+f = np.vectorize(lambda x: not x)
+
+# 選択されなかった(=False)の項をTrueに反転させて表示させる
+v = train.drop(['id', 'target'], axis=1).columns[f(selector.get_support())]
+print('{} variables have too low variance.'.format(len(v)))
+print('These variables are {}'.format(list(v)))
+
+# ------------------------------
+# 分散0.01以下の項は103項、0.001以下の項は6項存在する
+#
+# ひとまずここではこの選択器は使用しないこととする
+# ------------------------------
+
+
+# #### 3.5.2) Random Forestによる重要寄与特徴量の選択
+
+# In[40]:
+
+
+X_train = train.drop(['id', 'target'], axis=1)
+y_train = train['target']
+
+feat_labels = X_train.columns
+
+rf = RandomForestClassifier(n_estimators=1000, random_state=21, n_jobs=-1)
+
+rf.fit(X_train, y_train)
+importances = rf.feature_importances_
+indices = np.argsort(rf.feature_importances_)[::-1]
+
+for i in range(X_train.shape[1]):
+    print('%3d) %-*s %f' % (i + 1, 30,feat_labels[indices[i]],
+                            importances[indices[i]]))
+
+
+# In[46]:
+
+
+# 上で計算した重要度順に変数を選択する
+sfm = SelectFromModel(rf, threshold='median', prefit=True)   # 閾値は中央値を使う
+print('Number of features before selection: {}'.format(X_train.shape[1]))
+n_features = sfm.transform(X_train).shape[1]
+print('Number of features after selection: {}'.format(n_features))
+
+# get_supportで得たbool値で選択する変数ラベルのリストを作る
+selected_vars = list(feat_labels[sfm.get_support()])
+train = train[selected_vars + ['target']]
+
+train
 
