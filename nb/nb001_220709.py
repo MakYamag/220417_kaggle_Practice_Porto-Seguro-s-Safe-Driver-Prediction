@@ -6,7 +6,7 @@
 # - 3)のデータ加工は、(1)目的変数の不均衡対策としてのUndersampling、(2)欠損値補完、(3)ダミー変数作成、(4)交互作用特徴量の作成、(5)Random Forest重要特徴量による特徴量選択、を実施。
 # - 参考: Data Preparation & Exploration, BERT CARREMANS, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook
 
-# In[43]:
+# In[1]:
 
 
 import numpy as np
@@ -510,7 +510,7 @@ print('These variables are {}'.format(list(v)))
 
 # #### 3.5.2) Random Forestによる重要寄与特徴量の選択
 
-# In[40]:
+# In[ ]:
 
 
 X_train = train.drop(['id', 'target'], axis=1)
@@ -529,7 +529,7 @@ for i in range(X_train.shape[1]):
                             importances[indices[i]]))
 
 
-# In[46]:
+# In[ ]:
 
 
 # 上で計算した重要度順に変数を選択する
