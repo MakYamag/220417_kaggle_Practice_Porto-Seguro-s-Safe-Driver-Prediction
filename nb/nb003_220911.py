@@ -2,9 +2,8 @@
 # coding: utf-8
 
 # # Overview
-# - kaggleのNotebook(BERT CARREMANS氏)を参考に、1)データ読込、2)可視化、3)加工を実施。
-# - 3)のデータ加工は、(1)目的変数の不均衡対策としてのUndersampling、(2)欠損値補完、(3)ダミー変数作成、(4)交互作用特徴量の作成、(5)Random Forest重要特徴量による特徴量選択、を実施。
-# - 参考: Data Preparation & Exploration, BERT CARREMANS, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook
+# - nb001をtestデータの加工、出力にも対応するように変更した。
+# - idの列は番号が歯抜けになっており、Submissionの際に必要なため、testデータのidは別ファイルで保存する仕様。
 
 # In[1]:
 
@@ -27,7 +26,7 @@ pd.set_option('display.max_columns', 100)
 
 # ## 1) データ読込
 
-# In[30]:
+# In[2]:
 
 
 #df_train = pd.read_csv('/content/drive/My Drive/Colab Notebooks/data/train.csv')   # Google Colabの場合はこちら
@@ -35,7 +34,7 @@ data_train = pd.read_csv('C:/Users/ultra/Documents/GitHub/data/220417_kaggle_Pra
 data_train.head()
 
 
-# In[31]:
+# In[3]:
 
 
 #df_train = pd.read_csv('/content/drive/My Drive/Colab Notebooks/data/test.csv')   # Google Colabの場合はこちら
@@ -191,6 +190,9 @@ data_train[v].describe()
 # In[10]:
 
 
+### trainデータ
+### ===========
+
 vars_missing = []
 
 for f in data_train.columns:
@@ -212,10 +214,40 @@ print('In total, there are {} missing variables'.format(len(vars_missing))
 # ----------------------------------
 
 
-# ### 1.4) categorical変数の一意なデータ数の確認
-
 # In[11]:
 
+
+### testデータ
+### ===========
+
+vars_missing = []
+
+for f in data_test.columns:
+    n_missing = data_test[data_test[f] == -1][f].count()
+    
+    if n_missing > 0:
+        vars_missing.append(f)
+        perc_missing = n_missing / data_test.shape[0]
+        print('Variable {} has {} records ({:.2%})'.format(f, n_missing, perc_missing)
+              + ' with missing values')
+        
+print('In total, there are {} missing variables'.format(len(vars_missing))
+      + ' with missing values')
+
+# ----------------------------------
+# ・data_trainで欠損がなく、data_testで欠損がある変数はなし
+# ・欠損値の割合もtrainとtestで大きな差異はなし
+# ・ps_car_12のみ、data_trainで欠損があり、data_testで欠損がない
+# ----------------------------------
+
+
+# ### 1.4) categorical変数の一意なデータ数の確認
+
+# In[12]:
+
+
+### trainデータ
+### ===========
 
 v = meta[(meta['level'] == 'categorical') & (meta['keep'] == True)].index
 
@@ -228,11 +260,28 @@ for f in v:
 # ----------------------------------
 
 
+# In[13]:
+
+
+### testデータ
+### ===========
+
+v = meta[(meta['level'] == 'categorical') & (meta['keep'] == True)].index
+
+for f in v:
+    dist_values = data_test[f].value_counts().shape[0]
+    print('Varaiables {} has {} distinct values'.format(f, dist_values))
+    
+# ----------------------------------
+# ・ps_car_11_catのみ極端に一意なデータ数が多い
+# ----------------------------------
+
+
 # ## 2) データ可視化
 
 # ### 2.1) categoricalデータの可視化
 
-# In[12]:
+# In[14]:
 
 
 # 各categoricalデータにおいて、値ごとの
@@ -270,7 +319,7 @@ for f in v:
 
 # ### 2.2) continuousデータの可視化
 
-# In[13]:
+# In[15]:
 
 
 # 各continuousデータの相関を可視化
@@ -300,7 +349,7 @@ corr_heatmap(v)
 # -------------------------------------
 
 
-# In[14]:
+# In[16]:
 
 
 # 高速化のため10%のデータをランダムに抽出
@@ -314,7 +363,7 @@ sns.lmplot(x='ps_reg_02', y='ps_reg_03', data=s, hue='target', palette='Set1',
            scatter_kws={'alpha': 0.2})
 
 
-# In[15]:
+# In[17]:
 
 
 # 'ps_car_12'と'ps_car_13'をプロット
@@ -324,7 +373,7 @@ sns.lmplot(x='ps_car_12', y='ps_car_13', data=s, hue='target', palette='Set1',
            scatter_kws={'alpha': 0.2})
 
 
-# In[16]:
+# In[18]:
 
 
 # 'ps_car_12'と'ps_car_14'をプロット
@@ -334,7 +383,7 @@ sns.lmplot(x='ps_car_12', y='ps_car_14', data=s, hue='target', palette='Set1',
            scatter_kws={'alpha': 0.2})
 
 
-# In[17]:
+# In[19]:
 
 
 # 'ps_car_13'と'ps_car_15'をプロット
@@ -346,7 +395,7 @@ sns.lmplot(x='ps_car_13', y='ps_car_15', data=s, hue='target', palette='Set1',
 
 # ### 2.3) ordinalデータの可視化
 
-# In[18]:
+# In[20]:
 
 
 # 各ordinalデータの相関を可視化
@@ -365,7 +414,7 @@ corr_heatmap(v)
 
 # ### 3.1) target変数の不均衡対策
 
-# In[19]:
+# In[21]:
 
 
 # 1.2)で見たように'target'内で1の割合が極端に少ない
@@ -397,20 +446,28 @@ idx_list = list(undersampled_idx) + list(idx_1)
 # undersampleしたデータを取り出す
 train = data_train.loc[idx_list].reset_index(drop=True)
 train_w_nan = train.copy()   # 欠損値ありのものをコピーしておく
+
+# testデータはこの処理が必要ないので、データの名前だけ変えておく
+test = data_test
+
 train
 
 
 # ### 3.2) 欠損値処理
 
-# In[20]:
+# In[22]:
 
+
+### trainデータ、testデータ
+### ========================
 
 # 欠損値の割合が大きい ps_car_03_cat、ps_car_05_cat を取り除く
 # -----------------------------------------------------------
 
 vars_to_drop = ['ps_car_03_cat', 'ps_car_05_cat']
 if np.size(train, axis=1) == 59:
-    train.drop(vars_to_drop, inplace=True, axis=1)
+    train.drop(vars_to_drop, inplace=True, axis=1)   # train
+    test.drop(vars_to_drop, inplace=True, axis=1)   # test
 
 # 'meta'をアップデートしておく
 meta.loc[(vars_to_drop), 'keep'] = False
@@ -423,13 +480,21 @@ mean_imp = SimpleImputer(missing_values=-1, strategy='mean')
 mode_imp = SimpleImputer(missing_values=-1, strategy='most_frequent')
 
 vars_to_mean = ['ps_reg_03', 'ps_car_12', 'ps_car_14']
+# train
 mean_imp.fit(train[(vars_to_mean)])
 train[(vars_to_mean)] = mean_imp.transform(train[(vars_to_mean)])
+# test
+mean_imp.fit(test[(vars_to_mean)])
+test[(vars_to_mean)] = mean_imp.transform(test[(vars_to_mean)])
 
 vars_to_mode = ['ps_ind_02_cat', 'ps_ind_04_cat', 'ps_ind_05_cat', 'ps_car_01_cat',
                 'ps_car_02_cat', 'ps_car_07_cat', 'ps_car_09_cat', 'ps_car_11']
+# train
 mode_imp.fit(train[(vars_to_mode)])
 train[(vars_to_mode)] = mode_imp.transform(train[(vars_to_mode)])
+# test
+mode_imp.fit(test[(vars_to_mode)])
+test[(vars_to_mode)] = mode_imp.transform(test[(vars_to_mode)])
 
 
 # 欠損値がなくなったか確認
@@ -437,6 +502,7 @@ train[(vars_to_mode)] = mode_imp.transform(train[(vars_to_mode)])
 
 vars_missing = []
 
+# train
 for f in train.columns:
     n_missing = train[train[f] == -1][f].count()
     
@@ -447,25 +513,49 @@ for f in train.columns:
               + ' with missing values')
         
 print('In total, there are {} missing variables'.format(len(vars_missing))
-      + ' with missing values')
+      + ' with missing values   # train')
+
+# test
+for f in test.columns:
+    n_missing = test[test[f] == -1][f].count()
+    
+    if n_missing > 0:
+        vars_missing.append(f)
+        perc_missing = n_missing / test.shape[0]
+        print('Variable {} has {} records ({:.2%})'.format(f, n_missing, perc_missing)
+              + ' with missing values')
+        
+print('In total, there are {} missing variables'.format(len(vars_missing))
+      + ' with missing values   # test')
 
 
 # ### 3.3) categorical変数のダミー化
 
-# In[21]:
+# In[23]:
 
+
+### trainデータ、testデータ
+### ========================
 
 v = meta[(meta['level'] == 'categorical') & (meta['keep'] == True)].index
 print('Before dummification, we have {} variables in train data'.format(train.shape[1]))
 
+# train
 train = pd.get_dummies(train, columns=v, drop_first=True)
 print('After dummification, we have {} variables in train data'.format(train.shape[1]))
+
+# test
+test = pd.get_dummies(test, columns=v, drop_first=True)
+print('After dummification, we have {} variables in test data'.format(test.shape[1]))
 
 
 # ### 3.4) continuous変数のべき乗および交互作用の特徴量を作成
 
-# In[22]:
+# In[24]:
 
+
+### trainデータ
+### ============
 
 v = meta[(meta['level'] == 'continuous') & meta['keep'] == True].index
 poly = PolynomialFeatures(degree=2, interaction_only=False, include_bias=False)
@@ -483,11 +573,33 @@ print('After creating interactions, we have {} variables in train data'.format(t
 interactions.head()
 
 
+# In[25]:
+
+
+### testデータ
+### ===========
+
+v = meta[(meta['level'] == 'continuous') & meta['keep'] == True].index
+poly = PolynomialFeatures(degree=2, interaction_only=False, include_bias=False)
+interactions = pd.DataFrame(data=poly.fit_transform(test[v]),
+                            columns=poly.get_feature_names(v))
+
+# オリジナル(一次)の特徴量は重複となるので削除
+interactions.drop(v, axis=1, inplace=True)
+
+print('Before creating interactions, we have {} variables in test data'.format(test.shape[1]))
+
+test = pd.concat([test, interactions], axis=1)
+print('After creating interactions, we have {} variables in test data'.format(test.shape[1]))
+
+interactions.head()
+
+
 # ### 3.5) 特徴量選択
 
 # #### 3.5.1) 低分散特徴量を削除
 
-# In[23]:
+# In[26]:
 
 
 selector = VarianceThreshold(threshold=0.01)
@@ -510,7 +622,7 @@ print('These variables are {}'.format(list(v)))
 
 # #### 3.5.2) Random Forestによる重要寄与特徴量の選択
 
-# In[24]:
+# In[27]:
 
 
 X_train = train.drop(['id', 'target'], axis=1)
@@ -529,8 +641,11 @@ for i in range(X_train.shape[1]):
                             importances[indices[i]]))
 
 
-# In[25]:
+# In[28]:
 
+
+### trainデータ
+### ============
 
 # 上で計算した重要度順に変数を選択する
 sfm = SelectFromModel(rf, threshold='median', prefit=True)   # 閾値は中央値を使う
@@ -545,11 +660,38 @@ train = train[selected_vars + ['target']]
 train
 
 
+# In[30]:
+
+
+### testデータ
+### ============
+
+X_test = test.drop(['id'], axis=1)
+id_test = test['id']
+
+# 上で計算した重要度順に変数を選択する（選択機はtrainに準ずる）
+print('Number of features before selection: {}'.format(X_test.shape[1]))
+n_features = sfm.transform(X_test).shape[1]
+print('Number of features after selection: {}'.format(n_features))
+
+# get_supportで得たbool値で選択する変数ラベルのリストを作る
+selected_vars = list(feat_labels[sfm.get_support()])
+test = test[selected_vars]
+
+test
+
+
 # ## 4) データ出力
 
-# In[29]:
+# In[31]:
 
 
 # trainデータをcsv出力
-train.to_csv('../data/train_nb001.csv')
+train.to_csv('../data/train_nb003.csv')
+
+# testデータをcsv出力
+test.to_csv('../data/test_nb003.csv')
+
+# testデータのid列のみ別出力
+id_test.to_csv('../data/id_test_nb003.csv')
 
