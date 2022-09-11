@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # # Overview
-# - k
+# - nb001で出力したデータをSVC、ランダムフォレストのグリッドサーチで解析。
 
 # In[5]:
 
@@ -60,7 +60,7 @@ print('Label counts in y_check: [0 1] =', np.bincount(y_check.astype(np.int64)))
 
 
 # =================================
-# Pipeline: pl_scv
+# Pipeline: pl_svc
 # SVC / k分割交差検証 / グリッドサーチ
 # =================================
 
