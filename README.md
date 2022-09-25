@@ -3,8 +3,8 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 
 ## Data 
 | nb No. | Description | Reference | 
-| 生データ | 'id', 'target（trainのみ）'除き、57の特徴量。_indが18、_regが3、_carが16、_calcが20。 | N/A |
 | --- | --- | --- |
+| 生データ | 'id', 'target（trainのみ）'除き、57の特徴量。_indが18、_regが3、_carが16、_calcが20。 | N/A |
 | nb003 | **(1)目的変数の不均衡対策としてのUndersampling**：'target'=0に対して1が3.64%だったものを10%になるように'target'=0のデータをランダムに抽出。<br>**(2)欠損値補完**：_carの特徴量を2つ除去し、残りはmeanかmodeで補完。<br>**(3)ダミー変数作成**：categorical変数をダミー化。202特徴量に増加。<br>**(4)交互作用特徴量の作成**：257特徴量に増加。<br>**(5)Random Forest重要特徴量による特徴量選択**：129特徴量に減少。 | Data Preparation & Exploration, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook |
 
 ## Log
