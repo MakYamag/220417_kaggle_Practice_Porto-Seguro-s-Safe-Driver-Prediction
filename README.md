@@ -5,7 +5,7 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 | nb No. | 特徴量数 | 説明 | 参考文献 | 
 | --- | --- | --- | --- |
 | (RAW) | 57 | *id*, *target*（trainのみ）除き、57の特徴量。*_ind*が18、*_reg*が3、*_car*が16、*_calc*が20。 | N/A |
-| nb003 | 129 | **(1)目的変数の不均衡対策としてのUndersampling**：*target*=0に対して1が3.64%だったものを10%になるように*target*=0のデータをランダムに抽出。<br>**(2)欠損値補完**：*_car*の特徴量を2つ除去し、残りはmeanかmodeで補完。<br>**(3)ダミー変数作成**：categorical変数をダミー化。202特徴量に増加。<br>**(4)交互作用特徴量の作成**：257特徴量に増加。<br>**(5)Random Forest重要特徴量による特徴量選択**：129特徴量に減少。 | 1 |
+| nb003 | 129 | (1)目的変数の不均衡対策としてのUndersampling：*target*=0に対して1が3.64%だったものを10%になるように*target*=0のデータをランダムに抽出。<br>(2)欠損値補完：*_car*の特徴量を2つ除去し、残りはmeanかmodeで補完。<br>(3)ダミー変数作成：categorical変数をダミー化。202特徴量に増加。<br>(4)交互作用特徴量の作成：257特徴量に増加。<br>(5)Random Forest重要特徴量による特徴量選択：129特徴量に減少。 | 1 |
 
 1. Data Preparation & Exploration, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook
 
@@ -61,7 +61,7 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 <br>参考：Stratified KFold+XGBoost+EDA Tutorial(0.281), https://www.kaggle.com/code/sudosudoohio/stratified-kfold-xgboost-eda-tutorial-0-281/notebook
 
 #### [kaggle_nb003]
-- nb005の、評価指標を標準化gini係数にしたSVCモデル解析をsubmit。Public：xxx、Private：xxxと、
+- nb005の、評価指標を標準化gini係数にしたSVCモデル解析をsubmit。Public：-0.00708、Private：-0.01531となった。
 
 #### [kaggle_nb004]
 - nb005の、XGBoostモデル解析をsubmit（評価指標は標準化gini係数）。Public：0.22483、Private：0.22897となった。
