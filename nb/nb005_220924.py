@@ -2,9 +2,11 @@
 # coding: utf-8
 
 # # Overview
-# - kaggle_nb001ベースで、分類クラスではなく確率を出力するように変更。
+# - nb004までは、訓練時の評価指標はtarget（0 or 1）に対する予測の正解率だったが、コンペの評価指標である「標準化gini係数」を評価指標として訓練するようにした。
+# - 解析モデルとしてXGBoostを使用。ハイパーパラメータはネットで見かけたものの受け売り。
+#  参考：Stratified KFold+XGBoost+EDA Tutorial(0.281), https://www.kaggle.com/code/sudosudoohio/stratified-kfold-xgboost-eda-tutorial-0-281/notebook
 
-# In[1]:
+# In[2]:
 
 
 import numpy as np
@@ -21,7 +23,7 @@ pd.set_option('display.max_columns', 100)
 
 # ## 1) データ読み込み
 
-# In[2]:
+# In[3]:
 
 
 # trainデータ
@@ -30,7 +32,7 @@ data_train = pd.read_csv('../data/train_nb003.csv', index_col=0)
 data_train.tail()
 
 
-# In[3]:
+# In[4]:
 
 
 # testデータ
@@ -39,7 +41,7 @@ data_test = pd.read_csv('../data/test_nb003.csv', index_col=0)
 data_test.tail()
 
 
-# In[4]:
+# In[5]:
 
 
 # testデータ(id)
@@ -48,7 +50,7 @@ id_test = pd.read_csv('../data/id_test_nb003.csv', index_col=0)
 id_test.tail()
 
 
-# In[5]:
+# In[6]:
 
 
 X = data_train.drop('target', axis=1)
@@ -58,7 +60,7 @@ X_test = data_test
 
 # ## 2) 解析
 
-# In[6]:
+# In[7]:
 
 
 # 訓練用、チェック用にデータ分割
@@ -191,12 +193,11 @@ rf_bestclf = rf_gs.best_estimator_
 pd.DataFrame(rf_gs.cv_results_)
 
 
-# In[10]:
+# In[8]:
 
 
 # =============================================
 # Model: mdl_xgb
-# XGBoost / k分割交差検証 / グリッドサーチ
 # =============================================
 
 import xgboost as xgb
@@ -213,11 +214,11 @@ watchlist = [(xgb_train, 'train'), (xgb_check, 'check')]
 
 # モデル構築
 mdl_xgb = xgb.train(params, xgb_train, num_round, early_stopping_rounds=100,
-                    evals=watchlist, feval=gini_coefficient.gini_xgb,
+                    evals=watchlist, feval=gini_coefficient.gini_xgb, maximize=True,
                     verbose_eval=100)
 
 
-# In[17]:
+# In[9]:
 
 
 # testデータで予測
