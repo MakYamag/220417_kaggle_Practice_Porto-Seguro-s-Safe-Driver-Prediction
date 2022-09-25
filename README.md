@@ -3,12 +3,9 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 
 ## Data 
 | nb No. | Description | Reference | 
+| 生データ | 'id', 'target（trainのみ）'除き、57の特徴量。_indが18、_regが3、_carが16、_calcが20。 | N/A |
 | --- | --- | --- |
-| 生データ | 'id', 'target（trainのみ）'含め、59の特徴量。_indが18、_regが3、_carが16、_calcが20。 | N/A |
-| --- | --- | --- |
-| nb003 | - **(1)目的変数の不均衡対策としてのUndersampling**：'target'=0に対して1が3.64%だったものを10%になるように'target'=0のデータをランダムに抽出。
-- **(2)欠損値補完**：| Data Preparation & Exploration, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook |
-| 
+| nb003 | **(1)目的変数の不均衡対策としてのUndersampling**：'target'=0に対して1が3.64%だったものを10%になるように'target'=0のデータをランダムに抽出。<br>**(2)欠損値補完**：_carの特徴量を2つ除去し、残りはmeanかmodeで補完。<br>**(3)ダミー変数作成**：categorical変数をダミー化。202特徴量に増加。<br>**(4)交互作用特徴量の作成**：257特徴量に増加。<br>**(5)Random Forest重要特徴量による特徴量選択**：129特徴量に減少。 | Data Preparation & Exploration, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook |
 
 ## Log
 ### 220731
@@ -17,7 +14,7 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 #### [nb001]
 - kaggleのNotebook(BERT CARREMANS氏)を参考に、1)データ読込、2)可視化、3)加工を実施。
 - 3)のデータ加工は、(1)目的変数の不均衡対策としてのUndersampling、(2)欠損値補完、(3)ダミー変数作成、(4)交互作用特徴量の作成、(5)Random Forest重要特徴量による特徴量選択、を実施。
-参考: Data Preparation & Exploration, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook
+<br>参考: Data Preparation & Exploration, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook
 
 <br><br>
 ### 220807
@@ -59,7 +56,7 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 #### [nb005]
 - nb004までは、訓練時の評価指標はtarget（0 or 1）に対する予測の正解率だったが、コンペの評価指標である「標準化gini係数」を評価指標として訓練するようにした。
 - 解析モデルとしてXGBoostを使用。ハイパーパラメータはネットで見かけたものの受け売り。k分割交差検証も行っておらず、check用データの標準化gini係数が改善しなくなったところで終了させる仕様（Boosting115回程度で終了）。
-参考：Stratified KFold+XGBoost+EDA Tutorial(0.281), https://www.kaggle.com/code/sudosudoohio/stratified-kfold-xgboost-eda-tutorial-0-281/notebook
+<br>参考：Stratified KFold+XGBoost+EDA Tutorial(0.281), https://www.kaggle.com/code/sudosudoohio/stratified-kfold-xgboost-eda-tutorial-0-281/notebook
 
 #### [kaggle_nb003]
 - nb005の、評価指標を標準化gini係数にしたSVCモデル解析をsubmit。Public：xxx、Private：xxxと、
