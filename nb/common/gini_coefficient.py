@@ -5,13 +5,13 @@
 # - gini係数および標準化gini係数を定義。
 # - 参考：https://www.kaggle.com/code/batzner/gini-coefficient-an-intuitive-explanation/notebook
 
-# In[1]:
+# In[5]:
 
 
 import numpy as np
 
 
-# In[4]:
+# In[6]:
 
 
 # gini_coef(target, pred)：gini係数
@@ -50,17 +50,17 @@ def gini_norm(target, pred):
     return gini_coef(target, pred) / gini_coef(target, target)
 
 
-# In[2]:
+# In[8]:
 
 
-# gini_xgb(pred, xgb_train)：XGBoost評価用gini係数
+# gini_xgb(pred, xgb_data)：XGBoost評価用gini係数
 # ------------------------------------------------
 #   pred：予測確率
-#   xgb_train：XGBoost用に加工されたtrainデータ
+#   xgb_data：XGBoost用に加工されたデータ
 # ==============================================
 
-def gini_xgb(pred, xgb_train):
-    target = xgb_train.get_label().astype(int)
+def gini_xgb(pred, xgb_data):
+    target = xgb_data.get_label().astype(int)
     gini_score = gini_norm(target, pred)
     
     return 'gini_xgb', gini_score
