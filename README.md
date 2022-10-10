@@ -5,7 +5,7 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 | nb No. | 特徴量数 | 説明 | 参考文献 | 
 | --- | --- | --- | --- |
 | (RAW) | 57 | *id*, *target*（trainのみ）除き、57の特徴量。*_ind*が18、*_reg*が3、*_car*が16、*_calc*が20。 | N/A |
-| nb003 | 129 | (1)目的変数の不均衡対策としてのUndersampling：*target*=0に対して1が3.64%だったものを10%になるように*target*=0のデータをランダムに抽出。<br>(2)欠損値補完：*_car*の特徴量を2つ除去し、残りはmeanかmodeで補完。<br>(3)ダミー変数作成：categorical変数をダミー化。202特徴量に増加。<br>(4)交互作用特徴量の作成：257特徴量に増加。<br>(5)Random Forest重要特徴量による特徴量選択：129特徴量に減少。 | 1 |
+| nb003 | 129 | (1)目的変数の不均衡対策としてのUndersampling：*target*=0に対して1が3.64%だったものを10%になるように*target*=0のデータをランダムに抽出。<br>(2)欠損値補完：*_car*の特徴量を2つ除去し、残りはmeanかmodeで補完。<br>(3)ダミー変数作成：categorical変数をダミー化。202特徴量に増加。<br>(4)交互作用特徴量の作成：257特徴量に増加。<br>(5)Random Forest重要特徴量による特徴量選択：129特徴量に減少。 | 1) |
 
 1. Data Preparation & Exploration, https://www.kaggle.com/code/bertcarremans/data-preparation-exploration/notebook
 
@@ -65,3 +65,22 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 
 #### [kaggle_nb004]
 - nb005の、XGBoostモデル解析をsubmit（評価指標は標準化gini係数）。Public：0.22483、Private：0.22897となった。
+
+<br><br>
+### 221010
+- nb005のXGBモデルを使った解析を調整しやすいように少し書き換えて、いろいろ試してみた。
+
+#### [nb006]
+- nb005ベースに、パラメータを調節しやすいように書き換えた。XGBoostは、回帰モデル（reg:squarederror）を使用。
+- Learning Rateを0.01と小さくし、early stoppingで最大パフォーマンスを取る。標準化Gini係数はtrain：0.417、check：0.283程度。
+- Scikit-Learn APIのXGBRegressorなどを使ってGridSearchCVでパラメータ最適化を図るコードを書こうとしたが、エラーが解決せず断念。評価指標にカスタム指標（標準化Gini係数）を使っていることが原因？
+
+#### [nb007]
+- nb005ベースに、パラメータを調節しやすいように書き換えた。XGBoostは、二値分類モデル（binary:logistic）を使用。
+- Learning Rateを0.01と小さくし、early stoppingで最大パフォーマンスを取る。標準化Gini係数はtrain：0.435、check：0.283程度。
+
+#### [kaggle_nb005]
+- nb006ベースでsubmit。Public：0.26514、Private：0.27406となった。
+
+#### [kaggle_nb006]
+- nb007ベースでsubmit。Public：0.26658、Private：0.27332となった。
