@@ -76,7 +76,6 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 - Scikit-Learn APIのXGBRegressorなどを使ってGridSearchCVでパラメータ最適化を図るコードを書こうとしたが、エラーが解決せず断念。評価指標にカスタム指標（標準化Gini係数）を使っていることが原因？
 
 ![](image/nb006_norm_gini_reg.png)
-<br>
 ![](image/nb006_feat_importance_reg.png)
 
 #### [nb007]
@@ -84,7 +83,6 @@ Porto Seguroの自動車保険請求予測コンペ練習用レポジトリ。
 - Learning Rateを0.01と小さくし、early stoppingで最大パフォーマンスを取る。標準化Gini係数はtrain：0.435、check：0.283程度。
 
 ![](image/nb007_norm_gini_cla.png)
-<br>
 ![](image/nb007_feat_importance_cla.png)
 
 #### [kaggle_nb005]
